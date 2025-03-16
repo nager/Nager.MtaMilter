@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nager.MtaMilter.ServerConsole", "Nager.MtaMilter.ServerConsole\Nager.MtaMilter.ServerConsole.csproj", "{B3CEFF7C-0CCF-4929-831A-C00379C00028}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nager.MtaMilter", "Nager.MtaMilter\Nager.MtaMilter.csproj", "{774EB225-9590-406B-9164-B7D9564C571D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B3CEFF7C-0CCF-4929-831A-C00379C00028}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3CEFF7C-0CCF-4929-831A-C00379C00028}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3CEFF7C-0CCF-4929-831A-C00379C00028}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3CEFF7C-0CCF-4929-831A-C00379C00028}.Release|Any CPU.Build.0 = Release|Any CPU
+		{774EB225-9590-406B-9164-B7D9564C571D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{774EB225-9590-406B-9164-B7D9564C571D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{774EB225-9590-406B-9164-B7D9564C571D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{774EB225-9590-406B-9164-B7D9564C571D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
