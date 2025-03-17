@@ -60,8 +60,9 @@ test mail
 .
 ```
 
-**Example Configuration**
-![Stalwart](https://github.com/user-attachments/assets/8a624f35-7883-42b2-947f-d13efa942004)
+**Milter Configuration**
+![Stalwart Milter](https://github.com/user-attachments/assets/e996dfcd-2e11-4758-945f-cc693d9864f7)
+
 
 
 ## Contributing
