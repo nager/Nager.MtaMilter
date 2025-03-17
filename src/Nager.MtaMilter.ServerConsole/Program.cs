@@ -8,11 +8,11 @@ using SuperSimpleTcp;
 class Program
 {
     private static SimpleTcpServer? _tcpServer;
-    private static object _lock = new object();
+    private static readonly object _lock = new object();
 
     static void Main(string[] args)
     {
-        _tcpServer = new SimpleTcpServer("127.0.0.1", 20007);
+        _tcpServer = new SimpleTcpServer("127.0.0.1", 11332);
         _tcpServer.Settings.StreamBufferSize = 10000;
         _tcpServer.Settings.NoDelay = false;
         _tcpServer.Events.ClientConnected += Events_ClientConnected;
@@ -20,7 +20,7 @@ class Program
         _tcpServer.Events.DataReceived += Events_DataReceived;
         _tcpServer.Start();
 
-        Console.WriteLine("Virtual Milter ready on 127.0.0.1:20007");
+        Console.WriteLine("Virtual Milter ready on 127.0.0.1:11332");
         Console.WriteLine("Wait for connections, press any key for quit");
         Console.ReadLine();
 
@@ -84,7 +84,7 @@ class Program
             }
             finally
             {
-                Console.WriteLine("---------------------------------");
+                Console.WriteLine("--------------------------------------------------");
             }
         }
     }
