@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nager.MtaMilter.ServerConso
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nager.MtaMilter", "Nager.MtaMilter\Nager.MtaMilter.csproj", "{774EB225-9590-406B-9164-B7D9564C571D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nager.MtaMilter.UnitTest", "Nager.MtaMilter.UnitTest\Nager.MtaMilter.UnitTest.csproj", "{CA110549-1AE1-4A0F-98A4-6181517B26EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{774EB225-9590-406B-9164-B7D9564C571D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{774EB225-9590-406B-9164-B7D9564C571D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{774EB225-9590-406B-9164-B7D9564C571D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA110549-1AE1-4A0F-98A4-6181517B26EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CA110549-1AE1-4A0F-98A4-6181517B26EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CA110549-1AE1-4A0F-98A4-6181517B26EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA110549-1AE1-4A0F-98A4-6181517B26EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
