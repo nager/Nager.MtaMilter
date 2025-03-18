@@ -77,7 +77,9 @@ test mail
 **Milter Configuration**
 ![Stalwart Milter](https://github.com/user-attachments/assets/e996dfcd-2e11-4758-945f-cc693d9864f7)
 
-
+## Other Milter Projects
+- https://github.com/emersion/go-milter/blob/master/milter-protocol.txt
+- https://gitlab.com/noumenia/libmilterphp/-/blob/master/library/Milter.inc.php?ref_type=heads
 
 ## Contributing
 Contributions are welcome! Feel free to submit issues, feature requests, or pull requests via GitHub.
