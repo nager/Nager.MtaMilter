@@ -8,11 +8,11 @@ namespace Nager.MtaMilter.ServerConsole
         private readonly MilterProcessor _milterProcessor;
         private readonly object _lock = new object();
 
-        public MilterServer(MilterProcessor milterProcessor)
+        public MilterServer(MilterProcessor milterProcessor, int serverMilterPort)
         {
             this._milterProcessor = milterProcessor;
 
-            this._tcpServer = new SimpleTcpServer("127.0.0.1", 11332);
+            this._tcpServer = new SimpleTcpServer("127.0.0.1", serverMilterPort);
             this._tcpServer.Settings.StreamBufferSize = 1000;
             this._tcpServer.Settings.NoDelay = false;
             this._tcpServer.Events.ClientConnected += this.Events_ClientConnected;
