@@ -1,16 +1,29 @@
 ﻿using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nager.MtaMilter.Helpers;
+using Nager.MtaMilter.MilterMessages;
 using Nager.MtaMilter.Models;
 
 namespace Nager.MtaMilter
 {
-    public static class MilterProcessor
+    public class MilterProcessor
     {
-        public static byte[]? ProcessData(Span<byte> received)
-        {
-            var answerContinueByte = new byte[] { 0x63 }; //c = continue
-            var answerAbortByte = new byte[] { 0x61 }; //a = abort
+        private readonly ILogger<MilterProcessor> _logger;
 
+        public event Func<OptnegMilterMessage, bool>? OptnegMessageReceived;
+        public event Func<ConnectMilterMessage, bool>? ConnectMessageReceived;
+
+        private static byte[] answerContinueBytes = [0x63]; //c = continue
+        private static byte[] answerAbortBytes = [0x61]; //a = abort
+
+        public MilterProcessor(ILogger<MilterProcessor>? logger = default)
+        {
+            this._logger = logger ?? new NullLogger<MilterProcessor>();
+        }
+
+        public byte[]? ProcessData(Span<byte> received)
+        {
             var tempMessageSize = received[..4];
             tempMessageSize.Reverse();
             var messageSize = BitConverter.ToInt32(tempMessageSize);
@@ -69,7 +82,13 @@ namespace Nager.MtaMilter
                  * 0x40	SMFIP_NOEOH	        Skip SMFIC_EOH
                 */
 
-                Console.WriteLine($"SMFIC_OPTNEG - Protocol Version:{protocolVersion}");
+
+                if (this.OptnegMessageReceived is not null)
+                {
+                    this.OptnegMessageReceived.Invoke(new OptnegMilterMessage { ProtocolVersion = protocolVersion });
+                }
+
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_OPTNEG - Protocol Version:{protocolVersion}");
 
                 byte[] response = [0x4F, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x11, 0x00, 0x00, 0x00, 0x02];
 
@@ -91,12 +110,30 @@ namespace Nager.MtaMilter
 
                 splitIndex = received.IndexOf((byte)0x00);
 
-                var mailserverIpAddressTem = received.Slice(0, splitIndex);
-                var mailserverIpAddress = Encoding.ASCII.GetString(mailserverIpAddressTem);
+                var mailserverIpAddressTemp = received.Slice(0, splitIndex);
+                var mailserverIpAddress = Encoding.ASCII.GetString(mailserverIpAddressTemp);
 
-                Console.WriteLine($"SMFIC_CONNECT - Mailserver Host:{mailserverHost} IpAddress:{mailserverIpAddress}");
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_CONNECT - Mailserver Host:{mailserverHost} IpAddress:{mailserverIpAddress}");
 
-                return answerContinueByte;
+                if (this.ConnectMessageReceived is not null)
+                {
+                    var connectMessage = new ConnectMilterMessage
+                    {
+                        MailserverHost = mailserverHost,
+                        MailserverIpAddress = mailserverIpAddress
+                    };
+
+                    var continueProcessing = this.ConnectMessageReceived.Invoke(connectMessage);
+
+                    if (continueProcessing)
+                    {
+                        return answerContinueBytes;
+                    }
+
+                    return answerAbortBytes;
+                }
+
+                return answerContinueBytes;
             }
 
             if (command.Equals(MilterCommand.SMFIC_MACRO))
@@ -110,8 +147,8 @@ namespace Nager.MtaMilter
                     received = received.Slice(splitIndex + 1);
                     var macroVariableValue = Encoding.ASCII.GetString(received);
 
-                    Console.WriteLine($"SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
-                    return answerContinueByte;
+                    this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
+                    return answerContinueBytes;
                 }
 
                 if (received[0] == 0x52) //0x52 R
@@ -123,8 +160,8 @@ namespace Nager.MtaMilter
                     received = received.Slice(splitIndex + 1);
                     var macroVariableValue = Encoding.ASCII.GetString(received);
 
-                    Console.WriteLine($"SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
-                    return answerContinueByte;
+                    this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
+                    return answerContinueBytes;
                 }
 
                 if (received[0] == 0x4D) //0x4D M
@@ -136,11 +173,11 @@ namespace Nager.MtaMilter
                     received = received.Slice(splitIndex + 1);
                     var macroVariableValue = Encoding.ASCII.GetString(received);
 
-                    Console.WriteLine($"SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
-                    return answerContinueByte;
+                    this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
+                    return answerContinueBytes;
                 }
 
-                Console.WriteLine("SMFIC_MACRO - unknown macro?");
+                this._logger.LogWarning($"{nameof(ProcessData)} - SMFIC_MACRO - unknown macro?");
                 return null;
             }
 
@@ -155,65 +192,64 @@ namespace Nager.MtaMilter
                 received = received.Slice(splitIndex + 1);
                 var headerData = Encoding.ASCII.GetString(received);
 
-                Console.WriteLine($"SMFIC_HEADER received: {headerName}:{headerData}");
-                return answerContinueByte;
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_HEADER received: {headerName}:{headerData}");
+                return answerContinueBytes;
             }
 
 
             if (command.Equals(MilterCommand.SMFIC_MAIL))
             {
                 var mailFrom = Encoding.ASCII.GetString(received);
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_MAIL - Mail From:{mailFrom}");
 
-                Console.WriteLine($"SMFIC_MAIL - Mail From:{mailFrom}");
-
-                return answerContinueByte;
+                return answerContinueBytes;
             }
 
             if (command.Equals(MilterCommand.SMFIC_EOH))
             {
-                Console.WriteLine("SMFIC_EOH - End of Header received");
-                return answerContinueByte;
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_EOH - End of Header received");
+                return answerContinueBytes;
             }
 
             if (command.Equals(MilterCommand.SMFIC_RCPT))
             {
                 var rcpt = Encoding.ASCII.GetString(received);
-                Console.WriteLine($"SMFIC_RCPT {rcpt}");
-                return answerContinueByte;
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_RCPT {rcpt}");
+                return answerContinueBytes;
             }
 
             if (command.Equals(MilterCommand.SMFIC_BODY))
             {
                 var dataBody = Encoding.ASCII.GetString(received);
-                Console.WriteLine($"SMFIC_BODY {dataBody}");
-                return answerContinueByte;
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_BODY {dataBody}");
+                return answerContinueBytes;
             }
 
             if (command.Equals(MilterCommand.SMFIC_BODYEOB))
             {
                 var dataBodyEnd = Encoding.ASCII.GetString(received);
-                Console.WriteLine($"SMFIC_BODYEOB {dataBodyEnd}");
-                return answerContinueByte;
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_BODYEOB {dataBodyEnd}");
+                return answerContinueBytes;
             }
 
             if (command.Equals(MilterCommand.SMFIC_QUIT))
             {
-                Console.WriteLine("Quit received");
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_QUIT");
                 return null;
             }
 
             if (command.Equals(MilterCommand.SMFIC_DATA))
             {
                 // Mail Data Start Header and Body
-                Console.WriteLine($"SMFIC_DATA");
-                return answerContinueByte;
+                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_DATA");
+                return answerContinueBytes;
             }
 
             var readable = Encoding.ASCII.GetString(received);
 
-            Console.WriteLine($"Unknown command:{command} {readable}");
+            this._logger.LogWarning($"{nameof(ProcessData)} - Unknown command:{command} {readable}");
 
-            return answerAbortByte;
+            return answerContinueBytes;
         }
     }
 }
