@@ -29,6 +29,12 @@ Nager.MtaMilter can react to the following Milter protocol events:
 
 ## Default message sequence
 
+The diagram illustrates a typical communication sequence between the mail server and the Milter server.
+
+The communication always starts with SMFIC_OPTNEG, which negotiates protocol options.
+It always ends with SMFIC_QUIT, indicating the termination of the session.
+Between these two commands, various other Milter messages may be exchanged, depending on the email transaction.
+
 ```mermaid
 graph TD;
     SMFIC_OPTNEG-->SMFIC_______1;
