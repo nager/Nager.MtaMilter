@@ -20,11 +20,12 @@ Nager.MtaMilter can react to the following Milter protocol events:
 | `SMFIC_CONNECT` | `0x43` | Connection information | No |
 | `SMFIC_MAIL` | `0x4D` | MAIL FROM command | No |
 | `SMFIC_RCPT` | `0x52` | RCPT TO command | No |
+| `SMFIC_DATA` | `0x54` | DATA command, signals the start of the message body but contains no actual data | No |  
 | `SMFIC_HEADER` | `0x4C` | Mail header | No |
 | `SMFIC_EOH` | `0x4E` | End of headers | No |
 | `SMFIC_BODY` | `0x42` | Message body | No |
 | `SMFIC_BODYEOB` | `0x45` | End of body | No |
-| `SMFIC_DATA` | `0x54` | DATA command | No |  
+
 
 ## Default message sequence
 
