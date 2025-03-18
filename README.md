@@ -12,21 +12,28 @@ Nager.MtaMilter is a C# implementation of an MTA Milter, providing the core logi
 ## Supported Events
 Nager.MtaMilter can react to the following Milter protocol events:
 
-| Event | Description |
-|--------|-------------|
-| `SMFIC_MAIL` (0x4D) | MAIL FROM command |
-| `SMFIC_EOH` (0x4E) | End of headers |
-| `SMFIC_RCPT` (0x52) | RCPT TO command |
-| `SMFIC_HEADER` (0x4C) | Mail header |
-| `SMFIC_BODY` (0x42) | Message body |
-| `SMFIC_BODYEOB` (0x45) | End of body |
-| `SMFIC_QUIT` (0x51) | Quit communication |
-| `SMFIC_DATA` (0x54) | DATA command |
-| `SMFIC_MACRO` (0x44) | Macro definition |
-| `SMFIC_CONNECT` (0x43) | Connection information |
-| `SMFIC_OPTNEG` (0x4F) | Protocol negotiation |
+| Event | Command Byte | Description | Required |
+|-------|-------------|-------------|----------|
+| `SMFIC_OPTNEG` | `0x4F` | Protocol negotiation | Yes |
+| `SMFIC_QUIT` | `0x51` | Quit communication | Yes |
+| `SMFIC_MACRO` | `0x44` | Macro definition | No |
+| `SMFIC_CONNECT` | `0x43` | Connection information | No |
+| `SMFIC_MAIL` | `0x4D` | MAIL FROM command | No |
+| `SMFIC_RCPT` | `0x52` | RCPT TO command | No |
+| `SMFIC_HEADER` | `0x4C` | Mail header | No |
+| `SMFIC_EOH` | `0x4E` | End of headers | No |
+| `SMFIC_BODY` | `0x42` | Message body | No |
+| `SMFIC_BODYEOB` | `0x45` | End of body | No |
+| `SMFIC_DATA` | `0x54` | DATA command | No |  
 
+## Default message sequence
 
+```mermaid
+graph TD;
+    SMFIC_OPTNEG-->SMFIC_______1;
+    SMFIC_______1-->SMFIC_______2;
+    SMFIC_______2-->SMFIC_QUIT;
+```
 
 
 ## Development
