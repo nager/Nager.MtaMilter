@@ -1,9 +1,9 @@
-﻿using System.Text;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nager.MtaMilter.Helpers;
 using Nager.MtaMilter.MilterMessages;
 using Nager.MtaMilter.Models;
+using System.Text;
 
 namespace Nager.MtaMilter
 {
@@ -26,9 +26,15 @@ namespace Nager.MtaMilter
             {
                 { MilterCommand.SMFIC_OPTNEG, this.OptnegProcessor },
                 { MilterCommand.SMFIC_CONNECT, this.ConnectProcessor },
+                { MilterCommand.SMFIC_MAIL, this.MailProcessor },
+                { MilterCommand.SMFIC_RCPT, this.RcptProcessor },
                 { MilterCommand.SMFIC_MACRO, this.MacroProcessor },
+                { MilterCommand.SMFIC_DATA, this.DataProcessor },
                 { MilterCommand.SMFIC_HEADER, this.HeaderProcessor },
-                { MilterCommand.SMFIC_MAIL, this.MailProcessor }
+                { MilterCommand.SMFIC_EOH, this.EndOfHeaderProcessor },
+                { MilterCommand.SMFIC_BODY, this.BodyProcessor },
+                { MilterCommand.SMFIC_BODYEOB, this.EndOfBodyProcessor },
+                { MilterCommand.SMFIC_QUIT, this.QuitProcessor }       
             };
         }
 
@@ -58,48 +64,7 @@ namespace Nager.MtaMilter
                 return processor.Invoke(received.ToArray());
             }
 
-            if (command.Equals(MilterCommand.SMFIC_EOH))
-            {
-                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_EOH - End of Header received");
-                return answerContinueBytes;
-            }
-
-            if (command.Equals(MilterCommand.SMFIC_RCPT))
-            {
-                var rcpt = Encoding.ASCII.GetString(received);
-                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_RCPT {rcpt}");
-                return answerContinueBytes;
-            }
-
-            if (command.Equals(MilterCommand.SMFIC_BODY))
-            {
-                var dataBody = Encoding.ASCII.GetString(received);
-                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_BODY {dataBody}");
-                return answerContinueBytes;
-            }
-
-            if (command.Equals(MilterCommand.SMFIC_BODYEOB))
-            {
-                var dataBodyEnd = Encoding.ASCII.GetString(received);
-                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_BODYEOB {dataBodyEnd}");
-                return answerContinueBytes;
-            }
-
-            if (command.Equals(MilterCommand.SMFIC_QUIT))
-            {
-                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_QUIT");
-                return null;
-            }
-
-            if (command.Equals(MilterCommand.SMFIC_DATA))
-            {
-                // Mail Data Start Header and Body
-                this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_DATA");
-                return answerContinueBytes;
-            }
-
             var readable = Encoding.ASCII.GetString(received);
-
             this._logger.LogWarning($"{nameof(ProcessData)} - Unknown command:{command} {readable}");
 
             return answerContinueBytes;
@@ -154,6 +119,81 @@ namespace Nager.MtaMilter
             return response;
         }
 
+        private byte[]? ConnectProcessor(byte[] packageData)
+        {
+            var received = packageData.AsSpan();
+
+            var splitIndex = received.IndexOf((byte)0x00);
+            var mailserverHostTemp = received.Slice(0, splitIndex);
+            var mailserverHost = Encoding.ASCII.GetString(mailserverHostTemp);
+
+            received = received.Slice(splitIndex + 4); //3bytes family + port ignore at the moment
+
+            //char	hostname[]	Hostname, NUL terminated
+            //char family      Protocol family(see below)
+            //uint16 port        Port number(SMFIA_INET or SMFIA_INET6 only)
+            //char	address[]	IP address (ASCII) or unix socket path, NUL terminated
+
+            splitIndex = received.IndexOf((byte)0x00);
+
+            var mailserverIpAddressTemp = received.Slice(0, splitIndex);
+            var mailserverIpAddress = Encoding.ASCII.GetString(mailserverIpAddressTemp);
+
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_CONNECT - Mailserver Host:{mailserverHost} IpAddress:{mailserverIpAddress}");
+
+            if (this.ConnectMessageReceived is not null)
+            {
+                var connectMessage = new ConnectMilterMessage
+                {
+                    MailserverHost = mailserverHost,
+                    MailserverIpAddress = mailserverIpAddress
+                };
+
+                var continueProcessing = this.ConnectMessageReceived.Invoke(connectMessage);
+
+                if (continueProcessing)
+                {
+                    return answerContinueBytes;
+                }
+
+                return answerAbortBytes;
+            }
+
+            return answerContinueBytes;
+        }
+
+        private byte[]? QuitProcessor(byte[] packageData)
+        {
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_QUIT");
+            return null;
+        }
+
+        private byte[]? MailProcessor(byte[] packageData)
+        {
+            var received = packageData.AsSpan();
+
+            var mailFrom = Encoding.ASCII.GetString(received);
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_MAIL - Mail From:{mailFrom}");
+
+            return answerContinueBytes;
+        }
+
+        private byte[]? RcptProcessor(byte[] packageData)
+        {
+            var received = packageData.AsSpan();
+
+            var rcpt = Encoding.ASCII.GetString(received);
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_RCPT {rcpt}");
+            return answerContinueBytes;
+        }
+
+        private byte[]? DataProcessor(byte[] packageData)
+        {
+            // Mail Data Start Header and Body
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_DATA");
+            return answerContinueBytes;
+        }
+
         private byte[]? HeaderProcessor(byte[] packageData)
         {
             var received = packageData.AsSpan();
@@ -171,13 +211,29 @@ namespace Nager.MtaMilter
             return answerContinueBytes;
         }
 
-        private byte[]? MailProcessor(byte[] packageData)
+        private byte[]? EndOfHeaderProcessor(byte[] packageData)
         {
             var received = packageData.AsSpan();
 
-            var mailFrom = Encoding.ASCII.GetString(received);
-            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_MAIL - Mail From:{mailFrom}");
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_EOH - End of Header received");
+            return answerContinueBytes;
+        }
 
+        private byte[]? BodyProcessor(byte[] packageData)
+        {
+            var received = packageData.AsSpan();
+
+            var dataBody = Encoding.ASCII.GetString(received);
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_BODY {dataBody}");
+            return answerContinueBytes;
+        }
+
+        private byte[]? EndOfBodyProcessor(byte[] packageData)
+        {
+            var received = packageData.AsSpan();
+
+            var dataBodyEnd = Encoding.ASCII.GetString(received);
+            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_BODYEOB {dataBodyEnd}");
             return answerContinueBytes;
         }
 
@@ -226,49 +282,6 @@ namespace Nager.MtaMilter
 
             this._logger.LogWarning($"{nameof(ProcessData)} - SMFIC_MACRO - unknown macro?");
             return null;
-        }
-
-        private byte[]? ConnectProcessor(byte[] packageData)
-        {
-            var received = packageData.AsSpan();
-
-            var splitIndex = received.IndexOf((byte)0x00);
-            var mailserverHostTemp = received.Slice(0, splitIndex);
-            var mailserverHost = Encoding.ASCII.GetString(mailserverHostTemp);
-
-            received = received.Slice(splitIndex + 4); //3bytes family + port ignore at the moment
-
-            //char	hostname[]	Hostname, NUL terminated
-            //char family      Protocol family(see below)
-            //uint16 port        Port number(SMFIA_INET or SMFIA_INET6 only)
-            //char	address[]	IP address (ASCII) or unix socket path, NUL terminated
-
-            splitIndex = received.IndexOf((byte)0x00);
-
-            var mailserverIpAddressTemp = received.Slice(0, splitIndex);
-            var mailserverIpAddress = Encoding.ASCII.GetString(mailserverIpAddressTemp);
-
-            this._logger.LogDebug($"{nameof(ProcessData)} - SMFIC_CONNECT - Mailserver Host:{mailserverHost} IpAddress:{mailserverIpAddress}");
-
-            if (this.ConnectMessageReceived is not null)
-            {
-                var connectMessage = new ConnectMilterMessage
-                {
-                    MailserverHost = mailserverHost,
-                    MailserverIpAddress = mailserverIpAddress
-                };
-
-                var continueProcessing = this.ConnectMessageReceived.Invoke(connectMessage);
-
-                if (continueProcessing)
-                {
-                    return answerContinueBytes;
-                }
-
-                return answerAbortBytes;
-            }
-
-            return answerContinueBytes;
         }
     }
 }
