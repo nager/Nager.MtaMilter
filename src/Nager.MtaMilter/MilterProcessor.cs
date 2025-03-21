@@ -49,8 +49,6 @@ namespace Nager.MtaMilter
             tempMessageSize.Reverse();
             var messageSize = BitConverter.ToInt32(tempMessageSize);
 
-            //received = received.Slice(4);
-
             //if (received.Length != messageSize)
             //{
             //    //TODO: Check SMFIC_MACRO multiple data packages in one received package
@@ -247,45 +245,46 @@ namespace Nager.MtaMilter
 
             if (commandDataSpan[0] == 0x43) //0x43 C
             {
-                var splitIndex = commandDataSpan.IndexOf((byte)0x00);
-                var macroVariableTemp = commandDataSpan.Slice(1, splitIndex);
-                var macroVariable = Encoding.ASCII.GetString(macroVariableTemp);
+                var macroPart = this.MacroParser(commandDataSpan);
 
-                commandDataSpan = commandDataSpan.Slice(splitIndex + 1);
-                var macroVariableValue = Encoding.ASCII.GetString(commandDataSpan);
-
-                this._logger.LogDebug($"{nameof(MacroProcessor)} - SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
+                this._logger.LogDebug($"{nameof(MacroProcessor)} - SMFIC_MACRO - [C] {macroPart.Name}:{macroPart.Value}");
                 return answerContinueBytes;
             }
 
             if (commandDataSpan[0] == 0x52) //0x52 R
             {
-                var splitIndex = commandDataSpan.IndexOf((byte)0x00);
-                var macroVariableTemp = commandDataSpan.Slice(1, splitIndex);
-                var macroVariable = Encoding.ASCII.GetString(macroVariableTemp);
+                var macroPart = this.MacroParser(commandDataSpan);
 
-                commandDataSpan = commandDataSpan.Slice(splitIndex + 1);
-                var macroVariableValue = Encoding.ASCII.GetString(commandDataSpan);
-
-                this._logger.LogDebug($"{nameof(MacroProcessor)} - SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
+                this._logger.LogDebug($"{nameof(MacroProcessor)} - SMFIC_MACRO - [R] {macroPart.Name}:{macroPart.Value}");
                 return answerContinueBytes;
             }
 
             if (commandDataSpan[0] == 0x4D) //0x4D M
             {
-                var splitIndex = commandDataSpan.IndexOf((byte)0x00);
-                var macroVariableTemp = commandDataSpan.Slice(1, splitIndex);
-                var macroVariable = Encoding.ASCII.GetString(macroVariableTemp);
+                var macroPart = this.MacroParser(commandDataSpan);
 
-                commandDataSpan = commandDataSpan.Slice(splitIndex + 1);
-                var macroVariableValue = Encoding.ASCII.GetString(commandDataSpan);
-
-                this._logger.LogDebug($"{nameof(MacroProcessor)} - SMFIC_MACRO - {macroVariable}:{macroVariableValue}");
+                this._logger.LogDebug($"{nameof(MacroProcessor)} - SMFIC_MACRO - [M] {macroPart.Name}:{macroPart.Value}");
                 return answerContinueBytes;
             }
 
             this._logger.LogWarning($"{nameof(MacroProcessor)} - SMFIC_MACRO - unknown macro?");
             return null;
+        }
+
+        private MacroPart MacroParser(Span<byte> commandData)
+        {
+            var splitIndex = commandData.IndexOf((byte)0x00);
+            var macroVariableTemp = commandData.Slice(1, splitIndex);
+            var macroVariable = Encoding.ASCII.GetString(macroVariableTemp);
+
+            commandData = commandData.Slice(splitIndex + 1);
+            var macroVariableValue = Encoding.ASCII.GetString(commandData);
+
+            return new MacroPart
+            {
+                Name = macroVariable,
+                Value = macroVariableValue
+            };
         }
     }
 }
