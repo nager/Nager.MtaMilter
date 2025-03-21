@@ -80,9 +80,7 @@ namespace Nager.MtaMilter.ServerConsole
                         return;
                     }
 
-                    var received = e.Data.AsSpan();
-
-                    var response = this._milterProcessor.ProcessData(received);
+                    var response = this._milterProcessor.ProcessData([.. e.Data]);
                     if (response != null)
                     {
                         this.SendAnswer(e.IpPort, response);
